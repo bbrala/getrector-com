@@ -12,7 +12,6 @@ use Rector\Website\Exception\RectorRunFailedException;
 use Rector\Website\Exception\ShouldNotHappenException;
 use Rector\Website\Utils\ErrorMessageNormalizer;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 /**
@@ -76,7 +75,7 @@ final class DemoRunner
 
         $temporaryFilePaths = [$analyzedFilePath, $configPath];
 
-        $process = new Process([
+        $process = \Illuminate\Support\Facades\Process::run([
             // paths for phpunit differs based on test/demo, not sure why
             \defined('PHPUNIT_COMPOSER_INSTALL') ? 'vendor/bin/rector' : '../vendor/bin/rector',
             'process',
@@ -87,17 +86,15 @@ final class DemoRunner
             'json',
         ]);
 
-        $process->run();
-
         // remove temporary files
         $this->filesystem->remove($temporaryFilePaths);
 
         // error
-        if ($process->getExitCode() !== self::EXIT_CODE_SUCCESS) {
-            throw new RectorRunFailedException($process->getErrorOutput() ?: $process->getOutput());
+        if ($process->exitCode() !== self::EXIT_CODE_SUCCESS) {
+            throw new RectorRunFailedException($process->errorOutput() ?: $process->output());
         }
 
-        $output = $process->getOutput();
+        $output = $process->output();
         if ($output === '') {
             throw new RectorRunFailedException('Empty result returned');
         }
